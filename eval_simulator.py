@@ -1,3 +1,4 @@
+# will estimate cost of sharding in simulation - does not use hardware?
 import os
 import argparse
 import json

@@ -1,10 +1,10 @@
+# what is the purpose of this file? I thought it would take the dataset and run on it
 import argparse
 import os
 import json
 
 import numpy as np
 import torch
-
 
 def gen_table_configs(
     lS_rows,
@@ -15,7 +15,7 @@ def gen_table_configs(
     T = len(lS_rows) # number of tables
 
     table_configs = []
-    for i in range(T):
+    for i in range(T): # what are you doing?
         table_config = {}
         table_config["row"] = int(lS_rows[i])
         table_config["pooling_factor"] = lS_pooling_factors[i]
@@ -26,10 +26,10 @@ def gen_table_configs(
     return table_configs
 
 def process_data(data_path):
-    indices, offsets, lengths = torch.load(data_path)
+    indices, offsets, lengths = torch.load(data_path) # https://pytorch.org/docs/stable/generated/torch.load.html 
     num_tables, batch_size = lengths.shape
 
-    indices = indices.cuda()
+    indices = indices.cuda() #have to change this to what?
     offsets = offsets.cuda()
 
     lS_pooling_factors = lengths.float().mean(dim=1).tolist()
