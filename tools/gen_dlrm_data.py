@@ -29,7 +29,7 @@ def process_data(data_path):
     indices, offsets, lengths = torch.load(data_path) # https://pytorch.org/docs/stable/generated/torch.load.html 
     num_tables, batch_size = lengths.shape
 
-    indices = indices.cuda() #have to change this to what?
+    indices = indices.cuda() # the .cuda() moves it to GPU, so we can just remove this
     offsets = offsets.cuda()
 
     lS_pooling_factors = lengths.float().mean(dim=1).tolist()
