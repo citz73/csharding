@@ -178,7 +178,7 @@ class Timer:
         if self.device == "cpu":
             self.start_time = time.perf_counter()
         else:
-            torch.cuda.synchronize()
+            torch.cuda.synchronize() # TODO change this NN distributed or something
             self.start_event = torch.cuda.Event(enable_timing=True)
             self.end_event = torch.cuda.Event(enable_timing=True)
             self.start_event.record()
@@ -190,7 +190,7 @@ class Timer:
             self.end_time = time.perf_counter()
         else:
             self.end_event.record()
-            torch.cuda.synchronize()
+            torch.cuda.synchronize() # TODO change this NN distributed or something
             self.end_time = self.start_event.elapsed_time(self.end_event) * 1.0e-3
 
     # returns time in seconds

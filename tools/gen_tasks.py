@@ -11,11 +11,11 @@ def main():
     parser = argparse.ArgumentParser("Generate DLRM tasks")
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument("--data_size", type=int, default=100)
-    parser.add_argument('--T_range', type=str, default="10,60")
+    parser.add_argument('--T_range', type=str, default="10,60") # what is this
     parser.add_argument("--max_mem", type=int, default=15) # 4 * 4 - 1
     parser.add_argument("--max_dim", type=int, default=128)
     parser.add_argument("--data_dir", type=str, default="data/dlrm_datasets")
-    parser.add_argument('--out_dir', type=str, default="data/tasks/4_gpu")
+    parser.add_argument('--out_dir', type=str, default="data/tasks/4_vcpu")
 
     args = parser.parse_args()
     np.random.seed(args.seed)
@@ -70,7 +70,7 @@ def gen_task(
     dims,
 ):
     while True:
-        table_ids = np.random.randint(len(table_configs), size=T)
+        table_ids = np.random.randint(len(table_configs), size=T) # is this 1 - ...? or what is this doing
         table_dims = np.random.choice(dims, size=T)
         size = sum([table_size(table_configs[task_id]["row"], table_dims[i]) for i, task_id in enumerate(table_ids)])
         if size <= max_mem:

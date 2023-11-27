@@ -29,8 +29,8 @@ def process_data(data_path):
     indices, offsets, lengths = torch.load(data_path) # https://pytorch.org/docs/stable/generated/torch.load.html 
     num_tables, batch_size = lengths.shape
 
-    indices = indices.cuda() # the .cuda() moves it to GPU, so we can just remove this
-    offsets = offsets.cuda()
+    # indices = indices.cuda() # the .cuda() moves it to GPU, so we can just remove this
+    # offsets = offsets.cuda()
 
     lS_pooling_factors = lengths.float().mean(dim=1).tolist()
 
@@ -76,7 +76,7 @@ def process_data(data_path):
 def main():
     parser = argparse.ArgumentParser("Process DLRM data")
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--data', type=str, default="dlrm_datasets/embedding_bag/fbgemm_t856_bs65536.pt")
+    parser.add_argument('--data', type=str, default="data/dlrm_datasets/dlrm.pt")
     parser.add_argument('--out-dir', type=str, default="data/dlrm_datasets")
 
     args = parser.parse_args()
@@ -100,7 +100,7 @@ def main():
         lS_bin_counts,
         args
     )
-    with open(os.path.join(args.out_dir, "table_configs.json"), "w") as f:
+    with open(os.path.join(args.out_dir, "table_configs.json"), "w") as f: # we generate table configs
         json.dump(table_configs, f)
 
 if __name__ == '__main__':
