@@ -148,8 +148,8 @@ def init_distributed(rank=-1, local_rank=-1, size=-1, use_gpu=False, backend="")
             ],
             1,
         )
-        if use_gpu:
-            if my_local_size > torch.cuda.device_count():
+        if use_gpu: # TODO remove this?
+            if my_local_size > torch.cuda.device_count(): 
                 print(
                     "Not sufficient GPUs available... local_size = %d, ngpus = %d"
                     % (my_local_size, torch.cuda.device_count()) # TODO

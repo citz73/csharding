@@ -8,8 +8,8 @@ from typing import Dict, Any, Callable
 import numpy as np
 import torch
 from torch import multiprocessing as mp
-from fbgemm_gpu import split_table_batched_embeddings_ops
-from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType
+from fbgemm_gpu import split_table_batched_embeddings_ops # TODO
+from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType # TODO
 
 from neuroshard.utils import (
     Timer,
