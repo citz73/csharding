@@ -183,6 +183,7 @@ class ComputeBench:
         # Get data
         shard_offsets = [self.offsets[i%self.num_data] for i in table_indices]
         shard_indices = [self.indices[i%self.num_data] for i in table_indices]
+        print('HERE')
         args, kwargs, grads_tensor = get_data(
             self.batch_size,
             shard_offsets,
@@ -204,11 +205,12 @@ class ComputeBench:
 
 def benchmark_op(op: Callable, args: Any, kwargs: Any, grads_tensor: Any, device: str, num_iter: int):
     time_records = []
+    print(grads_tensor.shape)
     for _ in range(num_iter):
         _ = torch.rand(6 * 1024 * 1024 // 4).float() * 2  # V100 6MB L2 cache
-        #torch.cuda.empty_cache()
+
         with Timer(device) as timer:
-            op(*args, **kwargs).backward(grads_tensor)
+            op(*args, **kwargs).backward(grads_tensor) # FAILS
         time_records.append(timer.elapsed_time() * 1000)
     return time_records
 
