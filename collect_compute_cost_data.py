@@ -7,7 +7,7 @@ from neuroshard.utils import load_dlrm_dataset
 def main():
     parser = argparse.ArgumentParser("NeuroShard compute cost data collection")
     parser.add_argument("--data_size", type=int, default=999999999)
-    parser.add_argument("--num_cpus", type=int, default=4) # is this CPU?
+    parser.add_argument("--num_cpus", type=int, default=4) 
     parser.add_argument("--max_tables", type=int, default=15)
     parser.add_argument("--max_mem", type=int, default=4)
     parser.add_argument("--max_dim", type=int, default=128)

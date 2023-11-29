@@ -152,7 +152,6 @@ class ComputeBench:
         self.batch_size = self.offsets[0].shape[0] - 1
 
     def eval(self, table_indices):
-        print('at eval')
         if len(table_indices) == 0:
             return 0
 
@@ -178,12 +177,10 @@ class ComputeBench:
             device=self.device,
             weights_precision=SparseType.FP32,
         )
-        print('at eval:data')
 
         # Get data
         shard_offsets = [self.offsets[i%self.num_data] for i in table_indices]
         shard_indices = [self.indices[i%self.num_data] for i in table_indices]
-        print('HERE')
         args, kwargs, grads_tensor = get_data(
             self.batch_size,
             shard_offsets,
@@ -191,7 +188,7 @@ class ComputeBench:
             sum([self.table_configs[index]["dim"] for index in table_indices]),
             self.device,
         )
-        print('at eval: after shard')
+
         time_records = benchmark_op(
             op,
             args,
@@ -200,12 +197,12 @@ class ComputeBench:
             self.device,
             num_iter=self.warmup_iter+self.num_iter,
         )[self.warmup_iter:]
-        print('at eval: after time')
+
         return np.median(time_records, axis=0)
 
 def benchmark_op(op: Callable, args: Any, kwargs: Any, grads_tensor: Any, device: str, num_iter: int):
     time_records = []
-    print(grads_tensor.shape)
+
     for _ in range(num_iter):
         _ = torch.rand(6 * 1024 * 1024 // 4).float() * 2  # V100 6MB L2 cache
 
