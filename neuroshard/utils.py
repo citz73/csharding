@@ -5,6 +5,7 @@ from typing import List, Dict
 import time
 import numpy as np
 import torch
+import re
 
 @dataclass
 class ShardConfig:
@@ -39,7 +40,8 @@ def load_compute_cost_data(data_dir):
     with open(os.path.join(data_dir, "data.txt"), "r") as f:
         lines = f.readlines()
     for line in lines:
-        x, y_ = line.strip().split()
+        match = re.search(r'task: ([\d,]+) \| cost: (\d+\.\d+)', line)
+        x, y_ = match.group(1), match.group(2)
         x = list(map(int, x.split(",")))
         y_ = float(y_)
         X.append(x)

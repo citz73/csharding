@@ -6,7 +6,7 @@ from neuroshard.compute_cost_model import ComputeCostModel
 
 def main():
     parser = argparse.ArgumentParser("NeuroShard train compute cost model")
-    parser.add_argument("--data_dir", type=str, default="data/cost_data/compute/")
+    parser.add_argument("--data_dir", type=str, default="data/cost_data/compute_8/")
     parser.add_argument("--train_ratio", type=float, default=0.8)
     parser.add_argument("--valid_ratio", type=float, default=0.1)
     parser.add_argument("--batch_size", type=int, default=512)
@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--eval_every", type=int, default=1)
-    parser.add_argument("--out_path", type=str, default="models/compute.pt")
+    parser.add_argument("--out_path", type=str, default="models/compute_8.pt")
     args = parser.parse_args()
 
     table_configs, X, y = load_compute_cost_data(args.data_dir)

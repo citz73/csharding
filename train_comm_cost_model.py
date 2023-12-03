@@ -6,7 +6,7 @@ from neuroshard.comm_cost_model import CommCostModel
 
 def main():
     parser = argparse.ArgumentParser("NeuroShard train comm cost model")
-    parser.add_argument("--data_dir", type=str, default="data/cost_data/comm_4/")
+    parser.add_argument("--data_dir", type=str, default="data/cost_data/comm_8/")
     parser.add_argument("--train_ratio", type=float, default=0.8)
     parser.add_argument("--valid_ratio", type=float, default=0.1)
     parser.add_argument("--batch_size", type=int, default=512)
@@ -14,8 +14,8 @@ def main():
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--eval_every", type=int, default=1)
-    parser.add_argument("--fw_out_path", type=str, default="models/comm_4_fw.pt")
-    parser.add_argument("--bw_out_path", type=str, default="models/comm_4_bw.pt")
+    parser.add_argument("--fw_out_path", type=str, default="models/comm_8_fw.pt")
+    parser.add_argument("--bw_out_path", type=str, default="models/comm_8_bw.pt")
     args = parser.parse_args()
 
     fw_X, fw_y, bw_X, bw_y = load_comm_cost_data(args.data_dir)
