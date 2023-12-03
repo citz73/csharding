@@ -82,19 +82,14 @@ def random_dim_greedy(dims, random_prob, num_cpus):
 
 class CommBench:
     def __init__(self, num_processes):
-        print('hello')
         self.num_processes = num_processes
-        # Spawn processes
-        mp.spawn(self._init_process, args=(comm_bench_path,), nprocs=num_processes)
-        print('its me')
 
         # Construct command
-        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node=1 {} --ndevices {}".format(
+        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node={} {}".format(
+            num_processes,
             comm_bench_path,
-            self.num_processes,
         )
 
-        print('sdkakdk')
         # Run command
         self.process = subprocess.Popen(
             command,
@@ -103,7 +98,7 @@ class CommBench:
             stdout=subprocess.PIPE,
             encoding='utf8',
         )
-        print('dadjaww')
+
         # Wait until it is ready
         while True:
             line = self.process.stdout.readline().strip()
@@ -125,7 +120,7 @@ class CommBench:
 
         # Read results
         latencies = []
-        for device in range(self.ndevices):
+        for device in range(self.num_processes):
             result_path = os.path.join("/tmp", f"neuroshard_comm_{device}")
             with open(result_path, "r") as f:
                 latency = list(map(float, f.readlines()[0].split(",")))
