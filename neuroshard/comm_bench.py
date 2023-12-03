@@ -70,6 +70,7 @@ def benchmark_comm(
         comm_bench.terminate()
 
 def random_dim_greedy(dims, random_prob, num_cpus):
+    
     dims = sorted(dims, reverse=True)
     dim_sums = [0] * num_cpus
     for dim in dims:
@@ -85,9 +86,10 @@ class CommBench:
         self.num_processes = num_processes
 
         # Construct command
-        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node={} {}".format(
+        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node={} {} --num_cpus={}".format(
             num_processes,
             comm_bench_path,
+            num_processes
         )
 
         # Run command
@@ -140,7 +142,7 @@ class CommBench:
 
 
 def main():
-    parser = argparse.ArgumentParser("Multi GPU benchmark for embedding tables")
+    parser = argparse.ArgumentParser("Multi CPU benchmark for embedding tables")
     parser.add_argument('--batch_size', type=int, default=65536)
     parser.add_argument('--num_cpus', type=int, default=4)
 
