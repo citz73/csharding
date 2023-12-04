@@ -12,8 +12,8 @@ import traceback
 import torch.multiprocessing as mp
 import torch
 import torch.distributed as dist
-from fbgemm_gpu import split_table_batched_embeddings_ops # TODO
-from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType # TODO
+from fbgemm_gpu import split_table_batched_embeddings_ops 
+from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType 
 
 import neuroshard
 from neuroshard import extend_distributed as ext_dist

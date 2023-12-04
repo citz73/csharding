@@ -124,8 +124,12 @@ class CommCostModel:
         if isinstance(y, list):
             y = torch.tensor(y, dtype=torch.float32)
 
-        if normalize:
-            X = (X - self._feature_means) / self._feature_stds
+        # if normalize:
+        #     # X = X.float()
+        #     # self._feature_means = X.mean(dim=0)
+        #     # self._feature_stds = X.std(dim=0) + 1e-6  # Small value to avoid nan
+        #     print(X, self._feature_means, self._feature_stds)
+        #     X = (X - self._feature_means) / self._feature_stds
 
         self._cost_net.eval()
 
@@ -203,6 +207,7 @@ class CommCostNet(nn.Module):
 
     def forward(self, X):
         out = X
+        out = out.float()
         for layer in self.hidden[:-1]:
             out = F.relu(layer(out))
         out = self.hidden[-1](out)

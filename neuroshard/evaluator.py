@@ -34,10 +34,10 @@ class Evaluator:
         self,
         data_dir,
         task_path,
-        gpu_devices,
+        num_cpus,
         max_mem,
     ):
-        self.ndevices = len(gpu_devices.split(","))
+        self.ndevices = num_cpus
         self.max_mem = max_mem
 
         # Read data
