@@ -30,7 +30,7 @@ def main():
     parser.add_argument('--fw_comm_model', type=str, default="models/comm_4_fw.pt")
     parser.add_argument('--bw_comm_model', type=str, default="models/comm_4_bw.pt")
     parser.add_argument('--alg', type=str, default="random")
-    parser.add_argument('--ndevices', type=int, default=4)
+    parser.add_argument('--num_cpus', type=int, default=4)
     parser.add_argument('--max_mem', type=float, default=4)
 
     args = parser.parse_args()
@@ -44,9 +44,9 @@ def main():
     # Load models
     compute_cost_model = ComputeCostModel()
     compute_cost_model.load(args.compute_model)
-    fw_comm_cost_model = CommCostModel(args.ndevices)
+    fw_comm_cost_model = CommCostModel(args.num_cpus)
     fw_comm_cost_model.load(args.fw_comm_model)
-    bw_comm_cost_model = CommCostModel(args.ndevices)
+    bw_comm_cost_model = CommCostModel(args.num_cpus)
     bw_comm_cost_model.load(args.bw_comm_model)
 
     latencies = [] 
@@ -57,7 +57,7 @@ def main():
             fw_comm_cost_model,
             bw_comm_cost_model,
             task_table_configs,
-            args.ndevices,
+            args.num_cpus,
             args.max_mem,
         )
 
@@ -67,7 +67,7 @@ def main():
                 fw_comm_cost_model,
                 bw_comm_cost_model,
                 task_table_configs,
-                args.ndevices,
+                args.num_cpus,
                 args.max_mem,
             )
             sharding_steps, shards = sharder.shard()
@@ -75,7 +75,7 @@ def main():
         else:
             sizes = [table_size(config["row"], config["dim"]) for config in task_table_configs]
             shard_config = ShardConfig(
-                args.ndevices,
+                args.num_cpus,
                 args.max_mem,
                 len(task_table_configs),
                 task_table_configs,

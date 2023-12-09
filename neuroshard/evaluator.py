@@ -1,14 +1,11 @@
 import os
 import subprocess
-import json
 import argparse
 import time
 import numpy as np
 from typing import Dict, Any, Callable
 from collections import OrderedDict
 import gc
-import copy
-import traceback
 
 import torch
 import torch.distributed as dist
@@ -37,7 +34,7 @@ class Evaluator:
         num_cpus,
         max_mem,
     ):
-        self.ndevices = num_cpus
+        self.num_cpus = num_cpus
         self.max_mem = max_mem
 
         # Read data
@@ -47,13 +44,12 @@ class Evaluator:
         _, self.task_table_configs_list = read_tasks(task_path, table_configs)
 
         # Construct command
-        command = "OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES={} python -m torch.distributed.run --nproc_per_node={} {} --data_dir {} --task_path {} --ndevices {}".format(
-            gpu_devices,
-            self.ndevices,
+        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node={} {} --data_dir {} --task_path {} --num_cpus {}".format(
+            self.num_cpus,
             evaluator_path,
             data_dir,
             task_path,
-            self.ndevices,
+            self.num_cpus,
         )
 
         # Run command
@@ -68,6 +64,7 @@ class Evaluator:
         # Wait until it is ready
         while True:
             line = self.process.stdout.readline().strip()
+            print('1')
             if line == "1":
                 break
         print("Evaluator initiated!")
@@ -115,18 +112,17 @@ class Evaluator:
 
 
 def main():
-    parser = argparse.ArgumentParser("Multi GPU benchmark for embedding tables")
+    parser = argparse.ArgumentParser("Multi CPU benchmark for embedding tables")
     parser.add_argument('--data_dir', type=str, default="data/dlrm_datasets")
-    parser.add_argument('--task_path', type=str, default="data/tasks/4_gpu/data.txt")
-    parser.add_argument('--ndevices', type=int, default=4)
+    parser.add_argument('--task_path', type=str, default="data/tasks/4_cpu/data.txt")
+    parser.add_argument('--num_cpus', type=int, default=4)
 
     args = parser.parse_args()
 
     # Init distributed training
-    ext_dist.init_distributed(use_gpu=True)
-    device = "cuda:{}".format(ext_dist.my_local_rank)
+    ext_dist.init_distributed(use_gpu=False)
+    device = "cpu"
     torch.set_num_threads(1)
-    torch.cuda.set_device(device)
 
     # Read data
     table_configs, data = load_dlrm_dataset(args.data_dir)
@@ -146,7 +142,7 @@ def main():
             table_configs=task_table_configs,
             indices=task_indices,
             offsets=task_offsets,
-            ndevices=args.ndevices,
+            num_cpus=args.num_cpus,
             device=device,
         )
         evaluators.append(evaluator)
@@ -154,7 +150,7 @@ def main():
     result_path = os.path.join("/tmp", f"neuroshard_{ext_dist.my_local_rank}")
 
     # Synchronize workers
-    barrier(args.ndevices)
+    barrier(args.num_cpus)
     print("1") # Show it is ready
 
     while True:
@@ -183,7 +179,7 @@ def main():
         sharding = sharding[0]
 
         # Get number of tables in each rank and local indices
-        shards = allocation2plan(sharding, args.ndevices)
+        shards = allocation2plan(sharding, args.num_cpus)
 
         # Benchmark
         latency = evaluators[task_id].eval(sharding_steps, shards)
@@ -193,7 +189,7 @@ def main():
         time.sleep(0.1) # Wait until file writing finished
 
         # Synchronize workers
-        barrier(args.ndevices)
+        barrier(args.num_cpus)
         print("2") # Succuss signal
 
 class InternalEvaluator:
@@ -202,10 +198,10 @@ class InternalEvaluator:
         table_configs,
         indices,
         offsets,
-        ndevices,
+        num_cpus,
         warmup_iter=10,
         num_iter=100,
-        device="cuda:0",
+        device="cpu",
     ):
 
         self.table_configs = table_configs
@@ -214,7 +210,7 @@ class InternalEvaluator:
         self.offsets = offsets
         self.indices = indices
 
-        self.ndevices = ndevices
+        self.num_cpus = num_cpus
         self.warmup_iter = warmup_iter
         self.num_iter = num_iter
         self.device = device
@@ -233,7 +229,6 @@ class InternalEvaluator:
         num_elements_per_rank = [sum([aug_table_configs[index]["dim"] for index in indices]) for indices in shards]
 
         gc.collect()
-        torch.cuda.empty_cache()
 
         if len(table_indices) > 0:
             # Build the op
@@ -244,8 +239,8 @@ class InternalEvaluator:
                     (
                         table_config["row"],
                         table_config["dim"],
-                        split_table_batched_embeddings_ops.EmbeddingLocation.DEVICE,
-                        split_table_batched_embeddings_ops.ComputeDevice.CUDA,
+                        split_table_batched_embeddings_ops.EmbeddingLocation.HOST,
+                        split_table_batched_embeddings_ops.ComputeDevice.CPU,
                     )
                     for table_config in shard_table_configs
                 ],
@@ -273,7 +268,7 @@ class InternalEvaluator:
 
         grads_tensor = torch.randn(
             (
-                self.batch_size // self.ndevices,
+                self.batch_size // self.num_cpus,
                 sum(num_elements_per_rank),
             ),
         )
@@ -285,7 +280,7 @@ class InternalEvaluator:
             grads_tensor,
             shard_grads_tensor,
             self.device,
-            self.ndevices,
+            self.num_cpus,
             num_elements_per_rank,
             num_iter=self.warmup_iter+self.num_iter,
         )[self.warmup_iter:]
@@ -316,13 +311,11 @@ def benchmark_op(
                     time_records[iter_id][2] = 0.0
                 else:
                     _ = torch.rand(6 * 1024 * 1024 // 4).float() * 2  # V100 6MB L2 cache
-                    torch.cuda.empty_cache()
                     with Timer(device_) as timer:
                         op(*args, **kwargs).backward(shard_grads_tensor)
                     time_records[iter_id][1] = timer.elapsed_time() * 1000
 
                     _ = torch.rand(6 * 1024 * 1024 // 4).float() * 2  # V100 6MB L2 cache
-                    torch.cuda.empty_cache()
                     with Timer(device_) as timer:
                         y = op(*args, **kwargs)
                     time_records[iter_id][2] = timer.elapsed_time() * 1000
@@ -332,7 +325,6 @@ def benchmark_op(
 
     for iter_time in time_records:
         tmp_grads_tensor = grads_tensor.to(device)
-        torch.cuda.synchronize()
 
         if op is None:
             y = torch.randn((batch_size, 0, 1), device=device, requires_grad=True)
@@ -351,7 +343,6 @@ def benchmark_op(
         del y
         del tmp_grads_tensor
 
-        torch.cuda.synchronize()
         barrier(ndevices)
         if op is not None:
             y = op(*args, **kwargs)
@@ -368,7 +359,6 @@ def benchmark_op(
         else:
             y = op(*args, **kwargs)
             y = y.view(batch_size, -1, 1)
-        torch.cuda.synchronize()
 
         barrier(ndevices)
         with Timer(device) as timer:
@@ -382,7 +372,7 @@ def benchmark_op(
     return time_records
 
 def barrier(ndevices):
-    a2a_req = ext_dist.alltoall([torch.zeros(ndevices, 4, 1).to(f"cuda:{ext_dist.my_local_rank}")], [4 for _ in range(ndevices)], True)
+    a2a_req = ext_dist.alltoall([torch.zeros(ndevices, 4, 1).to(f"cpu")], [4 for _ in range(ndevices)], True)
     a2a_req.wait()
 
 if __name__ == "__main__":

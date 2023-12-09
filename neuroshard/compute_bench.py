@@ -160,7 +160,7 @@ class ComputeBench:
         # Build the op
         shard_table_configs = [self.table_configs[i] for i in table_indices]
 
-        op = split_table_batched_embeddings_ops.SplitTableBatchedEmbeddingBagsCodegen( # TODO
+        op = split_table_batched_embeddings_ops.SplitTableBatchedEmbeddingBagsCodegen( 
             [
                 (
                     table_config["row"],
