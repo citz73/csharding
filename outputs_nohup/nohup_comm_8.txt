@@ -1,0 +1,53 @@
+[W socket.cpp:464] [c10d] The server socket has failed to bind to [::]:29500 (errno: 98 - Address already in use).
+[W socket.cpp:464] [c10d] The server socket has failed to bind to 0.0.0.0:29500 (errno: 98 - Address already in use).
+[E socket.cpp:500] [c10d] The server socket has failed to listen on any local network address.
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/run.py", line 816, in <module>
+    main()
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 347, in wrapper
+    return f(*args, **kwargs)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/run.py", line 812, in main
+    run(args)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/run.py", line 803, in run
+    elastic_launch(
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 135, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/launcher/api.py", line 259, in launch_agent
+    result = agent.run()
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 123, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 727, in run
+    result = self._invoke_run(role)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 862, in _invoke_run
+    self._initialize_workers(self._worker_group)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 123, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 699, in _initialize_workers
+    self._rendezvous(worker_group)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/metrics/api.py", line 123, in wrapper
+    result = f(*args, **kwargs)
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/agent/server/api.py", line 542, in _rendezvous
+    store, group_rank, group_world_size = spec.rdzv_handler.next_rendezvous()
+  File "/home/ubuntu/.local/lib/python3.10/site-packages/torch/distributed/elastic/rendezvous/static_tcp_rendezvous.py", line 55, in next_rendezvous
+    self._store = TCPStore(  # type: ignore[call-arg]
+torch.distributed.DistNetworkError: The server socket has failed to listen on any local network address. The server socket has failed to bind to [::]:29500 (errno: 98 - Address already in use). The server socket has failed to bind to 0.0.0.0:29500 (errno: 98 - Address already in use).
+Traceback (most recent call last):
+  File "/home/ubuntu/csharding/neuroshard/comm_bench.py", line 39, in benchmark_comm
+    comm_bench = CommBench(num_cpus)
+  File "/home/ubuntu/csharding/neuroshard/comm_bench.py", line 106, in __init__
+    line = self.process.stdout.readline().strip()
+  File "/usr/lib/python3.10/codecs.py", line 319, in decode
+    def decode(self, input, final=False):
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/home/ubuntu/csharding/collect_comm_cost_data.py", line 33, in <module>
+    main()
+  File "/home/ubuntu/csharding/collect_comm_cost_data.py", line 23, in main
+    benchmark_comm(
+  File "/home/ubuntu/csharding/neuroshard/comm_bench.py", line 70, in benchmark_comm
+    comm_bench.terminate()
+UnboundLocalError: local variable 'comm_bench' referenced before assignment
