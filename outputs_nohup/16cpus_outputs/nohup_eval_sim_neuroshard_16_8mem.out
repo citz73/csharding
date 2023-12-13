@@ -1,0 +1,15 @@
+Task 1/100
+Sharding steps: [25, 22, 22, 21, 7, 11, 1, 53, 1], shards: [[29], [54, 49, 62, 60], [47, 41, 17, 23, 57, 21, 33, 35], [25, 27, 15], [4, 43, 36], [58, 59, 20, 26], [7, 11, 39, 50], [61, 5, 51], [53, 18, 52, 46], [55, 37, 3, 13], [56, 0, 9, 12], [22, 14, 32, 38], [44, 19, 30], [42, 8, 34, 16, 24], [28, 10, 45, 1], [40, 2, 48, 6, 31]]
+Latency: 22001.799072265625
+Task 2/100
+Sharding steps: [], shards: None
+Traceback (most recent call last):
+  File "/home/ubuntu/csharding/eval_simulator.py", line 99, in <module>
+    main()
+  File "/home/ubuntu/csharding/eval_simulator.py", line 88, in main
+    max_latency = simulator.get_final_cost(shards)
+  File "/home/ubuntu/csharding/neuroshard/simulator.py", line 38, in get_final_cost
+    if not self._check_size(shards):
+  File "/home/ubuntu/csharding/neuroshard/simulator.py", line 125, in _check_size
+    max_size_sum = max([self._tables_size(shard) for shard in shards])
+TypeError: 'NoneType' object is not iterable
