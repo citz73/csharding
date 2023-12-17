@@ -1,0 +1,6 @@
+*.pt
+.python-version
+neuroshard.egg-info/
+neuroshard/__pycache__/
+data.txt
+*.json

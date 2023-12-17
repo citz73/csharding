@@ -9,11 +9,11 @@ from collections import OrderedDict
 import gc
 import copy
 import traceback
-
+import torch.multiprocessing as mp
 import torch
 import torch.distributed as dist
-from fbgemm_gpu import split_table_batched_embeddings_ops
-from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType
+from fbgemm_gpu import split_table_batched_embeddings_ops 
+from fbgemm_gpu.split_embedding_configs import EmbOptimType as OptimType, SparseType 
 
 import neuroshard
 from neuroshard import extend_distributed as ext_dist
@@ -29,15 +29,14 @@ comm_bench_path = os.path.join(neuroshard.__path__[0], "comm_bench.py")
 
 def benchmark_comm(
     data_size,
-    gpu_devices,
+    num_cpus,
     T_range,
     sleep_range,
     max_dim,
     out_dir,
 ):
-    ndevices = len(gpu_devices.split(","))
     try:
-        comm_bench = CommBench(gpu_devices)
+        comm_bench = CommBench(num_cpus)
         dim_choices = []
         while max_dim % 4 == 0:
             dim_choices.append(max_dim)
@@ -48,10 +47,10 @@ def benchmark_comm(
                 task_T = np.random.randint(T_range[0], T_range[1])
                 dims = np.random.choice(dim_choices, size=task_T)
                 random_prob = np.random.random()
-                dim_sums = random_dim_greedy(dims, random_prob, ndevices)
+                dim_sums = random_dim_greedy(dims, random_prob, num_cpus)
 
                 sleep_time_diff = np.random.randint(sleep_range[0], sleep_range[1])
-                sleep_times = np.random.randint(sleep_time_diff, size=ndevices)
+                sleep_times = np.random.randint(sleep_time_diff, size=num_cpus)
                 sleep_times -= np.min(sleep_times)
                 fw_comm_costs, bw_comm_costs = comm_bench.evaluate(dim_sums, sleep_times)
                 dim_sums = ",".join(list(map(str, dim_sums)))
@@ -70,27 +69,27 @@ def benchmark_comm(
     finally:
         comm_bench.terminate()
 
-def random_dim_greedy(dims, random_prob, ndevices):
+def random_dim_greedy(dims, random_prob, num_cpus):
+    
     dims = sorted(dims, reverse=True)
-    dim_sums = [0] * ndevices
+    dim_sums = [0] * num_cpus
     for dim in dims:
         if np.random.random() < random_prob:
-            bin_id = np.random.randint(ndevices)
+            bin_id = np.random.randint(num_cpus)
         else:
             bin_id = np.argmin(dim_sums)
         dim_sums[bin_id] += dim
     return dim_sums
 
 class CommBench:
-    def __init__(self, gpu_devices):
-        self.ndevices = len(gpu_devices.split(","))
+    def __init__(self, num_processes):
+        self.num_processes = num_processes
 
         # Construct command
-        command = "OMP_NUM_THREADS=1 CUDA_VISIBLE_DEVICES={} python -m torch.distributed.run --nproc_per_node={} {} --ndevices {}".format(
-            gpu_devices,
-            self.ndevices,
+        command = "OMP_NUM_THREADS=1 python -m torch.distributed.run --nproc_per_node={} {} --num_cpus={}".format(
+            num_processes,
             comm_bench_path,
-            self.ndevices,
+            num_processes
         )
 
         # Run command
@@ -123,7 +122,7 @@ class CommBench:
 
         # Read results
         latencies = []
-        for device in range(self.ndevices):
+        for device in range(self.num_processes):
             result_path = os.path.join("/tmp", f"neuroshard_comm_{device}")
             with open(result_path, "r") as f:
                 latency = list(map(float, f.readlines()[0].split(",")))
@@ -135,7 +134,6 @@ class CommBench:
         return fw_comm_costs, bw_comm_costs
 
     def terminate(self):
-        #self.process.terminate()
         self.process.stdin.write("-1\n")
         self.process.stdin.flush()
         self.process.stdin.close()
@@ -144,23 +142,22 @@ class CommBench:
 
 
 def main():
-    parser = argparse.ArgumentParser("Multi GPU benchmark for embedding tables")
+    parser = argparse.ArgumentParser("Multi CPU benchmark for embedding tables")
     parser.add_argument('--batch_size', type=int, default=65536)
-    parser.add_argument('--ndevices', type=int, default=4)
+    parser.add_argument('--num_cpus', type=int, default=4)
 
     args = parser.parse_args()
 
     # Init distributed training
-    ext_dist.init_distributed(use_gpu=True)
-    device = "cuda:{}".format(ext_dist.my_local_rank)
+    ext_dist.init_distributed(use_gpu=False)
+    device = "cpu"
     torch.set_num_threads(1)
-    torch.cuda.set_device(device)
 
-    internal_comm_bench = InternalCommBench(args.batch_size, args.ndevices, device=device)
+    internal_comm_bench = InternalCommBench(args.batch_size, args.num_cpus, device=device)
     result_path = os.path.join("/tmp", f"neuroshard_comm_{ext_dist.my_local_rank}")
 
     # Synchronize workers
-    barrier(args.ndevices)
+    barrier(args.num_cpus)
     print("1") # Show it is ready
 
     while True:
@@ -190,7 +187,7 @@ def main():
         time.sleep(0.1) # Wait until file writing finished
 
         # Synchronize workers
-        barrier(args.ndevices)
+        barrier(args.num_cpus)
         print("2") # Succuss signal
 
 class InternalCommBench:
@@ -200,7 +197,7 @@ class InternalCommBench:
         ndevices,
         warmup_iter=5,
         num_iter=10,
-        device="cuda:0",
+        device="cpu",
     ):
         self.batch_size = batch_size
         self.ndevices = ndevices
@@ -210,7 +207,6 @@ class InternalCommBench:
 
     def eval(self, dims, sleep_times):
         gc.collect()
-        torch.cuda.empty_cache()
 
         grads_tensor = torch.randn((self.batch_size // self.ndevices, sum(dims)))
 
@@ -238,7 +234,6 @@ def benchmark(
     time_records = []
     for _ in range(num_iter):
         tmp_grads_tensor = grads_tensor.to(device)
-        torch.cuda.synchronize()
 
         iter_time = []
 
@@ -274,7 +269,7 @@ def benchmark(
     return time_records
 
 def barrier(ndevices):
-    a2a_req = ext_dist.alltoall([torch.zeros(ndevices, 4, 1).to(f"cuda:{ext_dist.my_local_rank}")], [4 for _ in range(ndevices)], True)
+    a2a_req = ext_dist.alltoall([torch.zeros(ndevices, 4, 1).to("cpu")], [4 for _ in range(ndevices)], True)
     a2a_req.wait()
 
 if __name__ == "__main__":

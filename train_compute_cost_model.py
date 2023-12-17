@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--eval_every", type=int, default=1)
-    parser.add_argument("--out_path", type=str, default="models/compute.pt")
+    parser.add_argument("--out_path", type=str, default="models/compute_4.pt")
     args = parser.parse_args()
 
     table_configs, X, y = load_compute_cost_data(args.data_dir)

@@ -2,9 +2,10 @@ import os
 import json
 from dataclasses import dataclass
 from typing import List, Dict
-
+import time
 import numpy as np
 import torch
+import re
 
 @dataclass
 class ShardConfig:
@@ -39,7 +40,8 @@ def load_compute_cost_data(data_dir):
     with open(os.path.join(data_dir, "data.txt"), "r") as f:
         lines = f.readlines()
     for line in lines:
-        x, y_ = line.strip().split()
+        match = re.search(r'task: ([\d,]+) \| cost: (\d+\.\d+)', line)
+        x, y_ = match.group(1), match.group(2)
         x = list(map(int, x.split(",")))
         y_ = float(y_)
         X.append(x)
@@ -178,7 +180,7 @@ class Timer:
         if self.device == "cpu":
             self.start_time = time.perf_counter()
         else:
-            torch.cuda.synchronize()
+            torch.cuda.synchronize() # TODO change this NN distributed or something
             self.start_event = torch.cuda.Event(enable_timing=True)
             self.end_event = torch.cuda.Event(enable_timing=True)
             self.start_event.record()
@@ -190,7 +192,7 @@ class Timer:
             self.end_time = time.perf_counter()
         else:
             self.end_event.record()
-            torch.cuda.synchronize()
+            torch.cuda.synchronize() # TODO change this NN distributed or something
             self.end_time = self.start_event.elapsed_time(self.end_event) * 1.0e-3
 
     # returns time in seconds
